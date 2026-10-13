@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turbo Robot — Défi Robot 2026–2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #FF6B00;
+    --orange-hot: #FF5500;
+    --bg: #0F0F13;
+    --bg-card: #18181F;
+    --bg-card2: #1E1E28;
+    --white: #FFFFFF;
+    --grey: #9999AA;
+    --grey-light: #CCCCDD;
+    --border: rgba(255,107,0,0.32);
+    --border-subtle: rgba(255,255,255,0.08);
+    --glow: 0 0 40px rgba(255,107,0,0.6);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Canvas de fond particules & parallaxe */
+  #bg-canvas {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; z-index: 0; opacity: 0.4;
+  }
+
+  /* Barre de progression globale en haut */
+  #scroll-progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--orange), #FF9944, var(--orange));
+    z-index: 1001;
+    box-shadow: 0 0 12px var(--orange);
+    transition: width 0.05s linear;
+  }
+
+  /* ── NAVIGATION & LIQUID FILL ANIMATION ── */
+  nav {
+    position: fixed; top: 3px; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 clamp(1.5rem, 5vw, 4rem);
+    height: 68px;
+    background: rgba(15,15,19,0.9);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .nav-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--white);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+    transition: transform 0.2s;
+  }
+
+  .nav-logo:hover { transform: scale(1.03); }
+
+  .nav-logo .dot {
+    width: 9px; height: 9px;
+    background: var(--orange);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--orange);
+    animation: pulseDot 2s infinite;
+  }
+
+  @keyframes pulseDot {
+    0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px var(--orange); }
+    50% { transform: scale(1.5); opacity: 0.8; box-shadow: 0 0 20px var(--orange); }
+  }
+
+  .nav-links { display: flex; gap: 1.5rem; list-style: none; align-items: center; flex-wrap: wrap; }
+
+  .nav-links a {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--grey);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    position: relative;
+    transition: color 0.3s;
+  }
+
+  .nav-links a span.fill-text {
+    position: relative;
+    display: inline-block;
+    color: var(--grey);
+  }
+
+  .nav-links a span.fill-text::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0; top: 0;
+    overflow: hidden;
+    width: var(--fill-progress, 0%);
+    white-space: nowrap;
+    background: linear-gradient(90deg, var(--orange), #FFB070, var(--orange));
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: liquidFlow 2s linear infinite;
+    transition: width 0.12s cubic-bezier(0.1, 0.8, 0.3, 1);
+  }
+
+  @keyframes liquidFlow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .audio-toggle-btn {
+    background: rgba(255,107,0,0.1);
+    border: 1px solid var(--border);
+    color: var(--orange);
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .audio-toggle-btn:hover {
+    background: var(--orange);
+    color: var(--white);
+    box-shadow: 0 0 15px rgba(255,107,0,0.4);
+  }
+
+  .nav-cta {
+    padding: 9px 22px;
+    background: var(--orange);
+    color: var(--white) !important;
+    border-radius: 4px;
+    font-weight: 600 !important;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s !important;
+    box-shadow: 0 0 20px rgba(255,107,0,0.3);
+  }
+
+  .nav-cta:hover {
+    background: var(--orange-hot) !important;
+    box-shadow: var(--glow) !important;
+    transform: translateY(-2px) scale(1.04);
+  }
+
+  /* ── WIDGET FLOTTANT API SPOTIFY ── */
+  #spotify-widget-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+    background: rgba(18, 18, 24, 0.95);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  #spotify-widget-container.minimized {
+    transform: translateY(110px);
+    opacity: 0.4;
+  }
+
+  .spotify-toggle-tab {
+    position: absolute;
+    top: -30px;
+    right: 10px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px 4px 0 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+
+  /* ── EFFET IMPULSION IMPACT AU CLIC ── */
+  .click-hole {
+    position: absolute;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,107,0,0.6) 0%, rgba(255,107,0,0) 70%);
+    border: 1px solid var(--orange);
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.2);
+    animation: holeImpact 0.5s ease-out forwards;
+    z-index: 9999;
+  }
+
+  @keyframes holeImpact {
+    0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; box-shadow: inset 0 0 15px var(--orange); }
+    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.7; }
+    100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+  }
+
+  /* ── HERO SECTION ── */
+  #hero {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 100px clamp(1.5rem, 5vw, 4rem) 60px;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    z-index: 2;
+  }
+
+  .hero-blur-overlay {
+    position: absolute; inset: 0;
+    background: rgba(12, 12, 16, 0.2);
+    pointer-events: none;
+    transition: backdrop-filter 0.5s ease, background 0.5s ease;
+    z-index: 1;
+  }
+
+  body.scrolled .hero-blur-overlay {
+    backdrop-filter: blur(16px);
+    background: rgba(12, 12, 16, 0.85);
+  }
+
+  .hero-content {
+    position: relative; z-index: 3;
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--orange);
+    letter-spacing: 0.12em;
+    margin-bottom: 1.8rem;
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: rgba(255,107,0,0.08);
+    box-shadow: 0 0 15px rgba(255,107,0,0.1);
+  }
+
+  .hero-tag::before { content: '▶'; font-size: 0.65rem; }
+
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(3.5rem, 10vw, 7.5rem);
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+  }
+
+  h1 .accent { color: var(--orange); text-shadow: 0 0 30px rgba(255,107,0,0.4); }
+
+  .slogan-reveal-box {
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+
+  body.scrolled .slogan-reveal-box {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+
+  .hero-slogan {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(1.3rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,107,0,0.08);
+    display: inline-block;
+    box-shadow: 0 0 25px rgba(255,107,0,0.2);
+  }
+
+  .hero-slogan span { color: var(--orange); }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--grey-light);
+    max-width: 580px;
+    margin-bottom: 2.5rem;
+    line-height: 1.75;
+  }
+
+  .hero-actions {
+    display: flex; gap: 1.2rem; flex-wrap: wrap; justify-content: center; align-items: center;
+  }
+
+  .btn-primary {
+    padding: 14px 32px;
+    background: var(--orange);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.03em;
+    border: none; border-radius: 4px;
+    cursor: pointer; text-decoration: none;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 25px rgba(255,107,0,0.35);
+  }
+
+  .btn-primary:hover { background: var(--orange-hot); transform: translateY(-3px) scale(1.03); box-shadow: var(--glow); }
+
+  .btn-ghost {
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.03em;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    cursor: pointer; text-decoration: none;
+    transition: border-color 0.2s, transform 0.2s, background 0.2s;
+  }
+
+  .btn-ghost:hover { border-color: var(--orange); background: rgba(255,107,0,0.08); transform: translateY(-3px); }
+
+  /* ── OVERLAY CINÉMATIQUE ── */
+  #cinematic-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(12, 12, 16, 0.92);
+    backdrop-filter: blur(22px);
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+    transition: clip-path 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  }
+
+  #cinematic-overlay.active {
+    pointer-events: auto;
+    opacity: 1;
+    clip-path: polygon(0 0, 200% 0, 0 200%, 0 100%);
+  }
+
+  #cinematic-overlay.fade-out { opacity: 0; transition: opacity 0.8s ease; }
+
+  .cinematic-text-wrap {
+    text-align: center;
+    transform: translateY(30px) scale(0.9);
+    opacity: 0;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+  }
+
+  #cinematic-overlay.active .cinematic-text-wrap { transform: translateY(0) scale(1); opacity: 1; }
+
+  .cinematic-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--white);
+    text-shadow: 0 0 60px rgba(255,107,0,0.6);
+    margin-bottom: 0.5rem;
+  }
+
+  .cinematic-title span { color: var(--orange); }
+
+  .cinematic-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--grey);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  .cinematic-class {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--orange);
+    letter-spacing: 0.15em;
+  }
+
+  /* ── SECTIONS COMMUNES ── */
+  section:not(#hero) {
+    padding: clamp(5rem, 9vw, 8rem) clamp(1.5rem, 5vw, 4rem);
+    position: relative;
+    z-index: 2;
+  }
+
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--orange);
+    letter-spacing: 0.14em;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 1.2rem;
+  }
+
+  .section-desc {
+    color: var(--grey-light);
+    max-width: 620px;
+    margin-bottom: 3.5rem;
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  /* ── ÉQUIPE ── */
+  #equipe { background: var(--bg-card); border-top: 1px solid var(--border-subtle); }
+
+  .team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8rem; }
+
+  .member-card {
+    background: var(--bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 2.2rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+
+  .member-card:hover {
+    border-color: var(--border);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(255,107,0,0.18);
+  }
+
+  .member-avatar {
+    width: 60px; height: 60px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--orange);
+    margin-bottom: 1.4rem;
+    box-shadow: 0 0 15px rgba(255,107,0,0.2);
+  }
+
+  .member-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--orange);
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .member-name { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.8rem; }
+  .member-desc { font-size: 0.92rem; color: var(--grey-light); line-height: 1.7; }
+
+  /* ── DÉFIS ── */
+  #epreuves { background: var(--bg); }
+
+  .tabs-nav {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 3rem;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--grey);
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    padding: 14px 32px;
+    cursor: pointer; white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); background: rgba(255,107,0,0.04); }
+
+  .tab-panel { display: none; grid-template-columns: 1fr 1fr; gap: 2rem; animation: fadeInTab 0.4s ease forwards; }
+  .tab-panel.active { display: grid; }
+
+  @keyframes fadeInTab {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .epreuve-card, .epreuve-card-full {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 2.2rem;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .epreuve-card-full { grid-column: 1 / -1; }
+
+  .epreuve-card:hover, .epreuve-card-full:hover {
+    border-color: var(--border);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(255,107,0,0.12);
+  }
+
+  .epreuve-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 3.8rem;
+    font-weight: 700;
+    color: rgba(255,107,0,0.15);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .epreuve-title { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.8rem; }
+  .epreuve-rule { font-size: 0.95rem; color: var(--grey-light); line-height: 1.7; margin-bottom: 1.5rem; }
+
+  .param-list { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; }
+  .param-list li {
+    font-size: 0.88rem; color: var(--grey-light);
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 14px; background: rgba(255,255,255,0.02);
+    border-radius: 4px; border-left: 3px solid var(--border);
+    transition: transform 0.2s, background 0.2s;
+  }
+  .param-list li:hover { transform: translateX(4px); background: rgba(255,107,0,0.06); }
+  .param-list li.warn { border-left-color: #FF3333; color: #FFAAAA; }
+  .param-list li::before { content: '›'; color: var(--orange); font-weight: bold; flex-shrink: 0; font-size: 1.1rem; }
+
+  .win-box {
+    background: linear-gradient(135deg, rgba(255,107,0,0.08), transparent);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 1.4rem; margin-top: 1rem;
+  }
+
+  .win-box-title { font-family: 'Rajdhani', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--orange); margin-bottom: 0.6rem; }
+
+  /* ── CALENDRIER & MISES À JOUR DYNAMIQUES ── */
+  #calendar-section { background: var(--bg-card); border-top: 1px solid var(--border-subtle); }
+
+  .calendar-container {
+    background: var(--bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+  }
+
+  .calendar-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
+  }
+
+  .calendar-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.8rem; font-weight: 700; color: var(--white);
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .calendar-controls { display: flex; align-items: center; gap: 12px; }
+
+  .cal-btn {
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    color: var(--white);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .cal-btn:hover { background: var(--orange); box-shadow: 0 0 15px rgba(255,107,0,0.4); }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .cal-day-header {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--orange);
+    padding: 8px 0;
+    text-transform: uppercase;
+  }
+
+  .cal-cell {
+    min-height: 80px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+
+  .cal-cell:hover { border-color: var(--orange); transform: translateY(-2px); }
+  .cal-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+  
+  .cal-cell.today {
+    border-color: var(--orange);
+    box-shadow: inset 0 0 12px rgba(255,107,0,0.3);
+  }
+
+  .cal-cell.today .cal-num {
+    color: var(--orange);
+    font-weight: 700;
+  }
+
+  .cal-cell.has-note {
+    background: rgba(255,107,0,0.12);
+    border-color: var(--orange);
+  }
+
+  .cal-num { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--grey-light); }
+  
+  .cal-badge {
+    width: 8px; height: 8px;
+    background: var(--orange);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--orange);
+    align-self: flex-end;
+  }
+
+  .note-display-box {
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    display: none;
+    animation: fadeInTab 0.3s ease;
+  }
+
+  .note-display-box.active { display: block; }
+  .note-date-title { font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--orange); margin-bottom: 0.5rem; }
+  .note-text-content { font-size: 0.95rem; color: var(--grey-light); line-height: 1.6; }
+
+  /* Modal Admin */
+  .admin-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: rgba(255,107,0,0.08);
+    border: 1px solid var(--border); border-radius: 6px; margin-bottom: 1.5rem;
+  }
+
+  .admin-status { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--orange); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #09090C;
+    border-top: 1px solid var(--border-subtle);
+    padding: 3rem clamp(1.5rem, 5vw, 4rem);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1.5rem;
+    position: relative; z-index: 2;
+  }
+
+  .footer-brand { font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .footer-brand .dot { width: 8px; height: 8px; background: var(--orange); border-radius: 50%; }
+  .footer-info { font-size: 0.85rem; color: var(--grey); }
+  .footer-info span { color: var(--orange); }
+
+  @media (max-width: 900px) {
+    .team-grid { grid-template-columns: 1fr; }
+    .tab-panel.active { grid-template-columns: 1fr; }
+    .epreuve-card-full { grid-column: auto; }
+    .calendar-grid { gap: 4px; }
+    .cal-cell { min-height: 50px; padding: 4px; }
+    #spotify-widget-container { bottom: 10px; right: 10px; max-width: calc(100vw - 20px); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="scroll-progress-bar"></div>
+
+<!-- LECTEUR API CLOUD SPOTIFY -->
+<div id="spotify-widget-container">
+  <button class="spotify-toggle-tab" onclick="toggleSpotifyWidget()">🎵 RnBoi - Mon Bébé</button>
+  <iframe style="border-radius:10px" src="https://open.spotify.com/embed/track/1yGJ40k7HLF3odITZPoQs4?utm_source=generator&theme=0" width="300" height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+</div>
+
+<!-- NAVIGATION -->
+<nav id="navbar">
+  <a href="#hero" class="nav-logo" onclick="playAudio('click')">
+    <span class="dot"></span>
+    TURBO ROBOT
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#equipe" onclick="playAudio('click')"><span class="fill-text" data-text="L'Équipe">L'Équipe</span></a></li>
+    <li><a href="#epreuves" onclick="playAudio('click')"><span class="fill-text" data-text="Les Défis">Les Défis</span></a></li>
+    <li><a href="#calendar-section" onclick="playAudio('click')"><span class="fill-text" data-text="Mises à Jour">Mises à Jour</span></a></li>
+    <li><a href="#equipe" class="nav-cta" onclick="triggerCinematic(event)">Découvrir</a></li>
+  </ul>
+</nav>
+
+<!-- OVERLAY CINÉMATIQUE -->
+<div id="cinematic-overlay">
+  <div class="cinematic-text-wrap">
+    <div class="cinematic-title">— <span>Instinct de course</span> —</div>
+    <div class="cinematic-sub">Équipe Turbo Robot - Défi 2026-2027 Technologie</div>
+    <div class="cinematic-class">Classe : 3°F</div>
+  </div>
+</div>
+
+<!-- ACCUEIL -->
+<section id="hero">
+  <div class="hero-blur-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-tag">DÉFI ROBOT 2026–2027</div>
+    <h1>
+      <span class="hero-line1">TURBO</span>
+      <span class="hero-line2"><span class="accent">ROBOT</span></span>
+    </h1>
+    <div class="slogan-reveal-box" id="sloganBox">
+      <div class="hero-slogan">— <span>Instinct de course</span> —</div>
+    </div>
+    <p class="hero-sub">
+      Un robot taillé pour la compétition. Une équipe rigoureuse. Trois épreuves pour imposer notre supériorité sur piste.
+    </p>
+    <div class="hero-actions">
+      <a href="#equipe" class="btn-primary" onclick="triggerCinematic(event)">Découvrir l'équipe</a>
+      <a href="#epreuves" class="btn-ghost" onclick="playAudio('click')">Voir les défis</a>
+    </div>
+  </div>
+</section>
+
+<!-- ÉQUIPE -->
+<section id="equipe">
+  <div class="section-eyebrow">COMPOSITION & RÔLES</div>
+  <h2 class="section-title">L'Équipe Turbo Robot</h2>
+  <p class="section-desc">
+    Trois rôles clés pour mener à bien le projet de technologie en classe de 3°F et viser la première place.
+  </p>
+
+  <div class="team-grid">
+    <div class="member-card">
+      <div class="member-avatar">EZ</div>
+      <div class="member-role">CHEF D'ÉQUIPE</div>
+      <div class="member-name">Ezio</div>
+      <p class="member-desc">
+        Dirige l'équipe, contrôle le projet, dit ce qu'on doit faire et gère la bonne organisation globale.
+      </p>
+    </div>
+
+    <div class="member-card">
+      <div class="member-avatar">EN</div>
+      <div class="member-role">RESPONSABLE PROGRAMMATION</div>
+      <div class="member-name">Enzo</div>
+      <p class="member-desc">
+        Code tout le programme et les mouvements du robot pour qu'il réussisse les parcours sur piste.
+      </p>
+    </div>
+
+    <div class="member-card">
+      <div class="member-avatar">NA</div>
+      <div class="member-role">RESPONSABLE PRÉSENTATION & PréAO</div>
+      <div class="member-name">Nathanael</div>
+      <p class="member-desc">
+        Gère la présentation du projet et a créé ce site web pour présenter notre équipe et notre robot.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- DÉFIS -->
+<section id="epreuves">
+  <div class="section-eyebrow">COMPÉTITION</div>
+  <h2 class="section-title">Les 3 Défis à Réussir</h2>
+  <p class="section-desc">
+    Analyse technique des épreuves officielles et stratégie de programmation embarquée.
+  </p>
+
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab(0); playAudio('tab');">Défi 1 : RoboPétanque</button>
+    <button class="tab-btn" onclick="switchTab(1); playAudio('tab');">Défi 2 : RoboRebond</button>
+    <button class="tab-btn" onclick="switchTab(2); playAudio('tab');">Défi 3 : RoboSkieur</button>
+  </div>
+
+  <div class="tab-panel active" id="tab0">
+    <div class="epreuve-card">
+      <div class="epreuve-num">01</div>
+      <div class="epreuve-title">RoboPétanque</div>
+      <p class="epreuve-rule">
+        S'approcher le plus près possible d'un obstacle sans le toucher. Départ fixé à 1 mètre de la cible.
+      </p>
+      <ul class="param-list">
+        <li>Départ à 1 mètre exact de l'obstacle</li>
+        <li>Arrêt d'une précision millimétrique exigé</li>
+        <li class="warn">Tout contact avec l'obstacle entraîne l'élimination directe</li>
+      </ul>
+    </div>
+    <div class="epreuve-card">
+      <div class="win-box">
+        <div class="win-box-title">Stratégie d'exécution — Turbo Robot</div>
+        <p class="epreuve-rule" style="margin-bottom:0;">
+          Exploitation continue des capteurs de distance et étalonnage minutieux de la décélération pour stopper le robot au plus près du mur sans risquer l'élimination.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab1">
+    <div class="epreuve-card">
+      <div class="epreuve-num">02</div>
+      <div class="epreuve-title">RoboRebond</div>
+      <p class="epreuve-rule">
+        Toucher doucement le mur, reculer d'au moins 30 cm, s'arrêter et faire clignoter les phares.
+      </p>
+      <ul class="param-list">
+        <li>Contact fluide et maîtrisé avec le mur</li>
+        <li>Recul obligatoire d'au moins 30 cm</li>
+        <li class="warn">Phares (DEL) clignotants obligatoires après l'arrêt</li>
+      </ul>
+    </div>
+    <div class="epreuve-card">
+      <div class="win-box">
+        <div class="win-box-title">Stratégie d'exécution — Turbo Robot</div>
+        <p class="epreuve-rule" style="margin-bottom:0;">
+          Gestion d'un contact en douceur via le pare-choc, marche arrière précisément calibrée à l'encodeur et déclenchement instantané des DEL.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab2">
+    <div class="epreuve-card-full">
+      <div class="epreuve-num">03</div>
+      <div class="epreuve-title">RoboSkieur</div>
+      <p class="epreuve-rule" style="margin-bottom:0;">
+        Réaliser un slalom complet entre des portes balisées et franchir la ligne d'arrivée avec une maîtrise totale de la trajectoire.
+      </p>
+    </div>
+    <div class="epreuve-card">
+      <div class="win-box-title">Contraintes du parcours</div>
+      <ul class="param-list">
+        <li>Portes balisées à franchir dans l'ordre strict</li>
+        <li class="warn">Une seule porte ratée entraîne l'élimination immédiate</li>
+        <li>Franchissement complet et valide de la ligne d'arrivée</li>
+      </ul>
+    </div>
+    <div class="epreuve-card">
+      <div class="win-box" style="margin-top:0;">
+        <div class="win-box-title">Stratégie d'exécution — Turbo Robot</div>
+        <p class="epreuve-rule" style="margin-bottom:0;">
+          Implémentation d'un algorithme de trajectoire optimisé pour enchaîner les virages en douceur et conserver une vitesse constante sans rater de porte.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CALENDRIER DE MISES À JOUR DYNAMIQUE -->
+<section id="calendar-section">
+  <div class="section-eyebrow">SUIVI DU PROJET</div>
+  <h2 class="section-title">Calendrier des Mises à Jour</h2>
+  <p class="section-desc">
+    Mises à jour en temps réel et journal de bord de l'équipe Turbo Robot.
+  </p>
+
+  <div class="calendar-container">
+    <div class="admin-bar">
+      <div class="admin-status" id="adminStatusText">MODE VISITEUR — Lecture seule</div>
+      <button class="cal-btn" id="adminLoginBtn" onclick="toggleAdminMode()">MODE ADMIN</button>
+    </div>
+
+    <div class="calendar-header">
+      <div class="calendar-title" id="calendarMonthYear">Octobre 2026</div>
+      <div class="calendar-controls">
+        <button class="cal-btn" onclick="changeMonth(-1)">‹ Précédent</button>
+        <button class="cal-btn" onclick="resetToCurrentMonth()">Aujourd'hui</button>
+        <button class="cal-btn" onclick="changeMonth(1)">Suivant ›</button>
+      </div>
+    </div>
+
+    <div class="calendar-grid" id="calendarGrid"></div>
+
+    <div class="note-display-box" id="noteDisplayBox">
+      <div class="note-date-title" id="noteDateTitle">Note du jour</div>
+      <div class="note-text-content" id="noteTextContent">Sélectionnez une date illuminée en orange pour consulter la mise à jour.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">
+    <span class="dot"></span>
+    TURBO ROBOT
+  </div>
+
+  <div class="footer-info">
+    Défi Robot <span>2026–2027</span> · Classe 3°F · Ezio · Enzo · Nathanael
+  </div>
+
+  <div class="footer-info" style="font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--orange);">
+    INSTINCT DE COURSE
+  </div>
+</footer>
+
+<script>
+  // ── GESTION AUDIO & CLOUD CALENDAR API ──
+  let audioCtx = null;
+  let updateNotes = {};
+  const API_URL = 'https://api.npoint.io/ef4834fe37203f6267b2';
+
+  function initAudioContext() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function toggleSpotifyWidget() {
+    const widget = document.getElementById('spotify-widget-container');
+    widget.classList.toggle('minimized');
+  }
+
+  document.addEventListener('click', (e) => {
+    initAudioContext();
+    const hole = document.createElement('div');
+    hole.className = 'click-hole';
+    hole.style.left = e.clientX + 'px';
+    hole.style.top = (e.clientY + window.scrollY) + 'px';
+    document.body.appendChild(hole);
+    setTimeout(() => hole.remove(), 500);
+  });
+
+  // ── CANVAS DE FOND INTERACTIF ──
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let mouse = { x: 0, y: 0 };
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  for(let i = 0; i < 40; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2 + 1,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4
+    });
+  }
+
+  window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  function renderCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#FF6B00';
+    particles.forEach(p => {
+      p.x += p.vx + (mouse.x - canvas.width/2) * 0.00005;
+      p.y += p.vy + (mouse.y - canvas.height/2) * 0.00005;
+
+      if(p.x < 0) p.x = canvas.width;
+      if(p.x > canvas.width) p.x = 0;
+      if(p.y < 0) p.y = canvas.height;
+      if(p.y > canvas.height) p.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    requestAnimationFrame(renderCanvas);
+  }
+  renderCanvas();
+
+  function playAudio(type = 'click') {
+    try {
+      initAudioContext();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'tab') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+    } catch(e) {}
+  }
+
+  window.addEventListener('scroll', () => {
+    const scrollY = window.scrollY;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    document.getElementById('scroll-progress-bar').style.width = ((scrollY / maxScroll) * 100) + '%';
+
+    if (scrollY > 40) {
+      document.body.classList.add('scrolled');
+    } else {
+      document.body.classList.remove('scrolled');
+    }
+
+    const sections = [
+      { id: 'equipe', linkIndex: 0 },
+      { id: 'epreuves', linkIndex: 1 },
+      { id: 'calendar-section', linkIndex: 2 }
+    ];
+    
+    const navLinks = document.querySelectorAll('.nav-links a span.fill-text');
+    const scrollPos = scrollY + window.innerHeight * 0.45;
+
+    sections.forEach((secInfo) => {
+      const sec = document.getElementById(secInfo.id);
+      const link = navLinks[secInfo.linkIndex];
+      if (!sec || !link) return;
+
+      const top = sec.offsetTop;
+      const height = sec.offsetHeight;
+
+      let progress = 0;
+      if (scrollPos < top) progress = 0;
+      else if (scrollPos > top + height) progress = 100;
+      else progress = ((scrollPos - top) / height) * 100;
+
+      link.style.setProperty('--fill-progress', Math.min(Math.max(progress, 0), 100) + '%');
+    });
+
+    if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 40) {
+      navLinks.forEach(link => link.style.setProperty('--fill-progress', '100%'));
+    }
+  });
+
+  const overlay = document.getElementById('cinematic-overlay');
+  let cinematicPlayed = false;
+
+  function triggerCinematic(e) {
+    if (e) e.preventDefault();
+    playAudio('click');
+    if (window.scrollY > 200 || cinematicPlayed) {
+      document.getElementById('equipe').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    cinematicPlayed = true;
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+      overlay.classList.add('fade-out');
+      setTimeout(() => {
+        overlay.classList.remove('active', 'fade-out');
+        document.getElementById('equipe').scrollIntoView({ behavior: 'smooth' });
+      }, 800);
+    }, 3000);
+  }
+
+  window.addEventListener('wheel', (e) => {
+    if (!cinematicPlayed && window.scrollY < 100 && e.deltaY > 30) {
+      triggerCinematic();
+    }
+  }, { passive: true });
+
+  function switchTab(index) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === index));
+    document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === index));
+  }
+
+  // ── CHARGEMENT & SAUVEGARDE EN LIGNE DES NOTES ──
+  let currentDate = new Date();
+  let isAdmin = false;
+
+  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+  async function fetchNotesOnline() {
+    try {
+      const res = await fetch(API_URL);
+      if (res.ok) {
+        updateNotes = await res.json();
+        renderCalendar();
+      }
+    } catch(err) {
+      console.error("Erreur chargement cloud :", err);
+    }
+  }
+
+  async function saveNotesOnline() {
+    try {
+      await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateNotes)
+      });
+    } catch(err) {
+      console.error("Erreur sauvegarde cloud :", err);
+    }
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    const title = document.getElementById('calendarMonthYear');
+    if (!grid || !title) return;
+    grid.innerHTML = '';
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    title.innerText = `${monthNames[month]} ${year}`;
+
+    dayNames.forEach(d => {
+      const h = document.createElement('div');
+      h.className = 'cal-day-header';
+      h.innerText = d;
+      grid.appendChild(h);
+    });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+
+    let startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+
+    for (let i = 0; i < startOffset; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'cal-cell empty';
+      grid.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      
+      const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === day) {
+        cell.classList.add('today');
+      }
+
+      if (updateNotes[dateKey]) {
+        cell.classList.add('has-note');
+      }
+
+      cell.innerHTML = `<span class="cal-num">${day}</span>${updateNotes[dateKey] ? '<span class="cal-badge"></span>' : ''}`;
+
+      cell.onclick = () => handleCellClick(dateKey, day);
+      grid.appendChild(cell);
+    }
+  }
+
+  async function handleCellClick(dateKey, day) {
+    playAudio('click');
+    const displayBox = document.getElementById('noteDisplayBox');
+    const title = document.getElementById('noteDateTitle');
+    const text = document.getElementById('noteTextContent');
+
+    if (isAdmin) {
+      const currentNote = updateNotes[dateKey] || '';
+      const newNote = prompt(`[MODE ADMIN CLOUD] Note de mise à jour pour le ${day} ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()} :`, currentNote);
+      
+      if (newNote !== null) {
+        if (newNote.trim() === '') {
+          delete updateNotes[dateKey];
+        } else {
+          updateNotes[dateKey] = newNote.trim();
+        }
+        await saveNotesOnline();
+        renderCalendar();
+      }
+    }
+
+    if (updateNotes[dateKey]) {
+      displayBox.classList.add('active');
+      title.innerText = `Mise à jour du ${day} ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      text.innerText = updateNotes[dateKey];
+    } else {
+      displayBox.classList.add('active');
+      title.innerText = `Projet Turbo Robot — ${day} ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      text.innerText = isAdmin ? "Aucune note. Cliquez à nouveau pour en ajouter une." : "Aucune mise à jour publiée à cette date.";
+    }
+  }
+
+  function changeMonth(delta) {
+    playAudio('tab');
+    currentDate.setMonth(currentDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function resetToCurrentMonth() {
+    playAudio('tab');
+    currentDate = new Date();
+    renderCalendar();
+  }
+
+  function toggleAdminMode() {
+    playAudio('click');
+    if (!isAdmin) {
+      const pass = prompt("Mot de passe Administrateur :");
+      if (pass === 'turbo2026') {
+        isAdmin = true;
+        document.getElementById('adminStatusText').innerText = 'MODE ADMIN CLOUD ACTIF — Vos notes seront partagées en direct.';
+        document.getElementById('adminLoginBtn').innerText = 'DÉCONNEXION ADMIN';
+        document.getElementById('adminLoginBtn').style.background = '#FF3333';
+      } else {
+        alert("Mot de passe incorrect.");
+      }
+    } else {
+      isAdmin = false;
+      document.getElementById('adminStatusText').innerText = 'MODE VISITEUR — Lecture seule';
+      document.getElementById('adminLoginBtn').innerText = 'MODE ADMIN';
+      document.getElementById('adminLoginBtn').style.background = 'var(--bg-card2)';
+    }
+    renderCalendar();
+  }
+
+  // Chargement initial des notes depuis le cloud au démarrage
+  fetchNotesOnline();
+</script>
+
+</body>
+</html>
