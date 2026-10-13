@@ -941,10 +941,10 @@
 </footer>
 
 <script>
-  // ── GESTION AUDIO & CLOUD CALENDAR API ──
+  // ── GESTION AUDIO & CLOUD CALENDAR API (JSONBLOB) ──
   let audioCtx = null;
   let updateNotes = {};
-  const API_URL = 'https://api.npoint.io/ef4834fe37203f6267b2';
+  const API_URL = 'https://jsonblob.com/api/jsonBlob/01a1367b-7dab-7f4e-a209-380279069681';
 
   function initAudioContext() {
     if (!audioCtx) {
@@ -1122,7 +1122,7 @@
     document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === index));
   }
 
-  // ── CHARGEMENT & SAUVEGARDE EN LIGNE DES NOTES ──
+  // ── CHARGEMENT & SAUVEGARDE CLOUD (JSONBLOB) ──
   let currentDate = new Date();
   let isAdmin = false;
 
@@ -1131,7 +1131,9 @@
 
   async function fetchNotesOnline() {
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(API_URL, {
+        headers: { 'Accept': 'application/json' }
+      });
       if (res.ok) {
         updateNotes = await res.json();
         renderCalendar();
@@ -1145,7 +1147,10 @@
     try {
       await fetch(API_URL, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(updateNotes)
       });
     } catch(err) {
